@@ -7,6 +7,8 @@ from datetime import datetime, timedelta
 from line_following import follow_the_line
 from office_navigation import enter_and_sweep_office, turn_degrees
 
+from get_distance import filter_distance
+
 DELAY_SEC = 0.01
 US_SENSOR = EV3UltrasonicSensor(2)
 DISTANCE_THRESHOLD = 8.9
@@ -63,6 +65,9 @@ def trace_the_black_square():
             while True:
                 try:
                     distance = US_SENSOR.get_value()
+                    while filter_distance(distance) != True: 
+                        distance = US_SENSOR.get_value()
+
                 except Exception as e:
                     print(e)
                     time.sleep(DELAY_SEC)  # for constant polling
