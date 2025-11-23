@@ -5,7 +5,8 @@ import time
 from datetime import datetime, timedelta
 
 from line_following import follow_the_line
-from office_navigation import enter_and_sweep_office, turn_degrees
+from office_navigation import enter_and_sweep_office, turn_degrees, follow_the_line_to_mailroom
+from delivery_subsystem import make_sound_at_mailroom
 
 DELAY_SEC = 0.01
 US_SENSOR = EV3UltrasonicSensor(2)
@@ -18,6 +19,7 @@ BOTTOM_RIGHT_OFFICE_DISTANCE = 82.3
 BOTTOM_LEFT_OFFICE_DISTANCE = 33.5
 
 MAIL_ROOM_DISTANCE = 58.8
+MAIL_ROOM_DISTANCE_ALONG_THE_LINE = 25
 
 OFFICE_DOORS_BY_SIDE = {
     0: [],
@@ -25,6 +27,7 @@ OFFICE_DOORS_BY_SIDE = {
     2: [TOP_RIGHT_OFFICE_DISTANCE],
     3: [BOTTOM_RIGHT_OFFICE_DISTANCE, BOTTOM_LEFT_OFFICE_DISTANCE],
     4: [],
+    5: [MAIL_ROOM_DISTANCE],
 }
 
 wait_ready_sensors()
@@ -43,8 +46,8 @@ def turn_right_90() -> None:
     turn_degrees(-90)
 
 
-def trace_the_black_square():
-    for side in range(4):
+def complete_all_deliveries():
+    for side in range(6):
         print(f"starting side: {side}")
 
         doors_for_side = OFFICE_DOORS_BY_SIDE.get(side, [])
@@ -75,7 +78,7 @@ def trace_the_black_square():
                     continue
 
                 # Handle office doors for this side
-                if next_door_index < len(doors_for_side):
+                if next_door_index < len(doors_for_side) and side != 5:
                     target_dist = doors_for_side[next_door_index]
                     # Only trigger once we are at or just past the door
                     if target_dist - OFFICE_TOLERANCE <= distance <= target_dist:
@@ -99,6 +102,24 @@ def trace_the_black_square():
                             daemon=True,
                         )
                         line_follow_thread.start()
+                    
+
+                    if side == 5:
+                        target_dist = doors_for_side[next_door_index]
+
+                        if target_dist - OFFICE_TOLERANCE <= distance <= target_dist:
+                            print("mailroom detected on side 5.")
+                            print(f"Detected at distance: {distance:.1f}")
+
+                            stop_event.set()
+                            line_follow_thread.join()
+
+                            turn_right_90()
+
+                            #take me to the mailroom
+                            if (follow_the_line_to_mailroom(MAIL_ROOM_DISTANCE_ALONG_THE_LINE)):
+                                make_sound_at_mailroom()
+                                return
 
                 # Corner detection
                 if distance <= DISTANCE_THRESHOLD:
@@ -127,4 +148,4 @@ def trace_the_black_square():
 
 
 if __name__ == "__main__":
-    trace_the_black_square()
+    complete_all_deliveries()

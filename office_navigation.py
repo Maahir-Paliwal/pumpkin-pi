@@ -5,7 +5,7 @@ import time
 from typing import Tuple
 
 # for block dropping 
-from drop_block import drop_block
+from delivery_subsystem import drop_block
 import math
 
 # ------ ROBOT GEOMETRY ------
@@ -333,6 +333,7 @@ def follow_line_into_office_until_door(max_distance_cm: float) -> Tuple[bool, fl
         avg_pos   = (left_pos + right_pos) / 2.0
 
         if avg_pos >= max_wheel_deg:
+
             # hit the maximum travel distance with no red
             LEFT_MOTOR.set_dps(0)
             RIGHT_MOTOR.set_dps(0)
@@ -378,6 +379,59 @@ def follow_line_into_office_until_door(max_distance_cm: float) -> Tuple[bool, fl
         time.sleep(COLOUR_SENSOR_SLEEP_POLL)
 
 # ----------------------------------------------------------
+
+def follow_the_line_to_mailroom(distance_to_mailroom_cm: float) -> bool:
+    max_wheel_deg = distance_to_mailroom_cm * DEGREES_PER_CM
+
+    LEFT_MOTOR.reset_position()
+    RIGHT_MOTOR.reset_position()
+
+
+    while True:
+        # --- how far have we gone along the line? ---
+        left_pos  = abs(LEFT_MOTOR.get_position())
+        right_pos = abs(RIGHT_MOTOR.get_position())
+        avg_pos   = (left_pos + right_pos) / 2.0
+
+        if avg_pos >= max_wheel_deg:
+
+            # hit the maximum travel distance with no red
+            LEFT_MOTOR.set_dps(0)
+            RIGHT_MOTOR.set_dps(0)
+            travelled_cm = avg_pos / DEGREES_PER_CM
+            return True, travelled_cm
+
+        # --- read colour + luminance ---
+        data = read_colour()
+        if data is None:
+            time.sleep(COLOUR_SENSOR_SLEEP_POLL)
+            continue
+
+        r, g, b, lum = data
+
+        # --- DPS-based line-follow step (same logic as follow_the_line) ---
+        error = lum - threshold
+        turn = TURN_FACTOR * error
+
+        # percentage “commands” around FORWARD_SPEED
+        left_pct  = FORWARD_SPEED + turn
+        right_pct = FORWARD_SPEED - turn
+
+        # clamp to valid percent range
+        left_pct  = max(-100, min(left_pct, 100))
+        right_pct = max(-100, min(right_pct, 100))
+
+        # convert to degrees per second
+        left_dps  = (left_pct / 100.0) * MAX_DPS
+        right_dps = (right_pct / 100.0) * MAX_DPS
+
+        LEFT_MOTOR.set_dps(left_dps)
+        RIGHT_MOTOR.set_dps(right_dps)
+
+        time.sleep(COLOUR_SENSOR_SLEEP_POLL)
+
+
+
 
 
 def enter_and_sweep_office(turn_direction: str = "right") -> bool:

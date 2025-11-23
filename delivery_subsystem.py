@@ -5,6 +5,7 @@ from utils import sound
 FORWARD_ROTATION = 180 #180 deg/sec
 MOTOR_ROTATION_TIME = 1
 DROP_SOUND = sound.Sound(duration=0.5, pitch=400, volume=80)
+AT_HOME_SOUND = sound.Sound(duration=0.5, pitch=100, volume=80)
 
 MOTOR = Motor("A")
 
@@ -17,6 +18,10 @@ def drop_block():
     MOTOR.set_dps(0)
     DROP_SOUND.play()
     DROP_SOUND.wait_done()
+
+def make_sound_at_mailroom():
+    AT_HOME_SOUND.play()
+    AT_HOME_SOUND.wait_done()
 
 
 if __name__ == "__main__":
