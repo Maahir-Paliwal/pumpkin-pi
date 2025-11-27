@@ -146,6 +146,7 @@ def complete_all_deliveries():
 
         print(f"Turning right at the end of side: {side}")
         turn_right_90()
+        # throw away all distance values less than 80 
 
 
     BP.reset_all()
